@@ -8,8 +8,21 @@
     "scheme": "bookeverything",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "ios": { "supportsTablet": true, "bundleIdentifier": "com.bookchaowalit.bookeverything" },
-    "android": { "adaptiveIcon": { "backgroundColor": "#1a1a2e" }, "package": "com.bookchaowalit.bookeverything" },
-    "plugins": ["expo-router"]
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bookchaowalit.bookeverything"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1a1a2e",
+        "foregroundImage": "./assets/adaptive-icon.png"
+      },
+      "package": "com.bookchaowalit.bookeverything"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-asset",
+      "expo-font"
+    ]
   }
 }

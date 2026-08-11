@@ -10,7 +10,7 @@ export default function TabLayout() {
       headerStyle: { backgroundColor: '#1a1a2e' },
       headerTintColor: '#fff',
     }}>
-      <Tabs.Screen name="index" options={{ title: 'Library', tabBarIcon: ({ color, size }) => <Ionicons name="books" size={size} color={color} /> }} />
+      <Tabs.Screen name="index" options={{ title: 'Library', tabBarIcon: ({ color, size }) => <Ionicons name="book" size={size} color={color} /> }} />
       <Tabs.Screen name="stats" options={{ title: 'Stats', tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart" size={size} color={color} /> }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} /> }} />
     </Tabs>
