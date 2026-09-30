@@ -13,14 +13,13 @@
 ## Backlog
 
 ### P0
-- Notes field: `Book.notes` exists but no screen edits it (add a notes editor
-  on `/book/[id]`).
+- None open.
 
 ### P1
+- Import a JSON backup (paste or file) validated with `parseStoredBooks`.
 - Component tests (jest-expo + @testing-library/react-native) for add/detail.
 - Edit title/author/pages after creation; custom page entry instead of only
   ±10/+50 buttons.
-- Export/import library as JSON (backup; AsyncStorage is device-only).
 
 ### P2
 - Upgrade Expo SDK 52 -> 53+ (clears remaining `npm audit` findings in Expo
@@ -40,3 +39,13 @@
   leave the app stuck on loading; unique ids; `dateCompleted` set on add.
 - CI runs `npm ci`, lint, typecheck, tests and an Android bundle export with no
   failure masking; EAS preview build is owner-triggered; `eas.json` committed.
+
+## Done in this pass (pass 2)
+
+Score: 7/10 (was 6/10) — notes are editable and the library can be exported; still SDK 52.
+
+- Notes editor on `/book/[id]` (saves on blur or via "Save notes", capped at 2,000 chars with `normalizeNotes`); legacy stored books without `notes` are back-filled by `parseStoredBooks`.
+- Export: Stats tab shares a versioned JSON backup (`exportLibrary`) through the core `Share` API. Import is still TODO (P1).
+- Accessibility: labelled notes field, save/export/remove buttons with roles and disabled state.
+- Advisories: lockfile-only patch updates (`npm update`) for brace-expansion, fast-uri, js-yaml, undici and @xmldom/xmldom; `overrides.postcss ^8.5.28`. 29 -> 24 findings (10 -> 5 high). Remaining (tar critical, image-size, uuid, xmldom 0.7 via plist, vitest dev-only) need the SDK 53+ / vitest 4 majors.
+- Verified: typecheck, lint, 15 vitest tests, Android `expo export` bundle.

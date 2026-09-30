@@ -118,7 +118,10 @@ export function parseStoredBooks(json: string | null): Book[] {
   if (!json) return [];
   try {
     const data: unknown = JSON.parse(json);
-    return Array.isArray(data) ? data.filter(isBook) : [];
+    return Array.isArray(data)
+      ? data.filter(isBook).map((b) => ({ ...b, notes: typeof b.notes === 'string' ? b.notes : '' }))
+      : [];
+
   } catch {
     return [];
   }
@@ -134,4 +137,16 @@ export function filterBooks(books: Book[], status: StatusFilter, query = ''): Bo
       (status === 'all' || b.status === status) &&
       (!q || b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)),
   );
+}
+
+export const MAX_NOTES_LENGTH = 2000;
+
+/** Trims trailing whitespace and caps notes so one book cannot bloat storage. */
+export function normalizeNotes(text: string): string {
+  return text.replace(/\s+$/, '').slice(0, MAX_NOTES_LENGTH);
+}
+
+/** Portable JSON backup of the library (AsyncStorage is device-only). */
+export function exportLibrary(books: Book[], now: Date): string {
+  return JSON.stringify({ app: 'bookreviews', version: 1, exportedAt: now.toISOString(), books }, null, 2);
 }

@@ -1,13 +1,25 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useBooks } from '../../lib/BookContext';
-import { applyPageDelta, progressPercent, STATUSES, type BookStatus } from '../../lib/books';
+import {
+  applyPageDelta,
+  MAX_NOTES_LENGTH,
+  normalizeNotes,
+  progressPercent,
+  STATUSES,
+  type BookStatus,
+} from '../../lib/books';
 
 export default function BookDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { books, updateBook, deleteBook } = useBooks();
   const book = books.find(b => b.id === id);
+  const savedNotes = book?.notes ?? '';
+  const [notes, setNotes] = useState(savedNotes);
+  useEffect(() => setNotes(savedNotes), [savedNotes]);
+  const notesDirty = normalizeNotes(notes) !== savedNotes;
 
   if (!book) return <View style={styles.center}><Text style={styles.text}>Book not found</Text></View>;
 
@@ -65,7 +77,34 @@ export default function BookDetailScreen() {
           ))}
         </View>
       )}
-      <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
+      <Text style={styles.notesLabel} nativeID="notesLabel">Notes</Text>
+      <TextInput
+        style={styles.notesInput}
+        multiline
+        value={notes}
+        onChangeText={setNotes}
+        onBlur={() => { if (notesDirty) updateBook(book.id, { notes: normalizeNotes(notes) }); }}
+        maxLength={MAX_NOTES_LENGTH}
+        placeholder="Thoughts, quotes, review draft…"
+        placeholderTextColor="#777"
+        accessibilityLabel={`Notes for ${book.title}`}
+        accessibilityLabelledBy="notesLabel"
+      />
+      <View style={styles.notesFooter}>
+        <Text style={styles.pageCount}>{notes.length}/{MAX_NOTES_LENGTH}</Text>
+        <TouchableOpacity
+          onPress={() => updateBook(book.id, { notes: normalizeNotes(notes) })}
+          disabled={!notesDirty}
+          accessibilityRole="button"
+          accessibilityLabel="Save notes"
+          accessibilityState={{ disabled: !notesDirty }}
+        >
+          <Text style={[styles.saveNotes, !notesDirty && styles.saveNotesDone]} accessibilityLiveRegion="polite">
+            {notesDirty ? 'Save notes' : 'Saved'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete} accessibilityRole="button" accessibilityLabel={`Remove ${book.title} from library`}>
         <Text style={styles.deleteText}>Remove Book</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -99,6 +138,12 @@ const styles = StyleSheet.create({
   statusBtnActive: { backgroundColor: '#e94560' },
   statusBtnText: { color: '#888', fontSize: 13 },
   statusBtnTextActive: { color: '#fff', fontWeight: '600' },
+  notesLabel: { color: '#aaa', fontSize: 14, marginTop: 24, marginBottom: 6 },
+  notesInput: { backgroundColor: '#16213e', color: '#fff', borderRadius: 12, padding: 12, minHeight: 110, textAlignVertical: 'top', fontSize: 15 },
+  notesFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 },
+  saveNotes: { color: '#2a9d8f', fontWeight: '600', padding: 6 },
+  saveNotesDone: { color: '#888' },
   deleteBtn: { marginTop: 32, padding: 14, alignItems: 'center' },
+
   deleteText: { color: '#e94560', fontSize: 16 },
 });
