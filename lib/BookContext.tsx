@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
+import { Alert } from 'react-native';
 import { computeStats, type LibraryStats } from './books';
 import { Book, getBooks, addBook as addBookStorage, updateBook as updateBookStorage, deleteBook as deleteBookStorage } from './storage';
 
@@ -26,12 +27,22 @@ export function BookProvider({ children }: { children: ReactNode }) {
 
   const stats = useMemo(() => computeStats(books), [books]);
 
+  // Writes refuse to overwrite an unreadable saved library; tell the user
+  // instead of failing silently.
+  const guarded = async (write: () => Promise<Book[]>) => {
+    try {
+      setBooks(await write());
+    } catch (e) {
+      Alert.alert('Library not saved', e instanceof Error ? e.message : String(e));
+    }
+  };
+
   return (
     <BookContext.Provider value={{
       books, loading, stats,
-      addBook: async (book) => setBooks(await addBookStorage(book)),
-      updateBook: async (id, updates) => setBooks(await updateBookStorage(id, updates)),
-      deleteBook: async (id) => setBooks(await deleteBookStorage(id)),
+      addBook: (book) => guarded(() => addBookStorage(book)),
+      updateBook: (id, updates) => guarded(() => updateBookStorage(id, updates)),
+      deleteBook: (id) => guarded(() => deleteBookStorage(id)),
     }}>
       {children}
     </BookContext.Provider>

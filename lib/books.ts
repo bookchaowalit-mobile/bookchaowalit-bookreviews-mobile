@@ -127,6 +127,32 @@ export function parseStoredBooks(json: string | null): Book[] {
   }
 }
 
+/**
+ * Strict variant used before every write: missing data is an empty library,
+ * but corrupt JSON or entries this version cannot read throw instead of
+ * returning [] — otherwise the next add/update/delete would overwrite the
+ * user's whole saved library with the (empty or partial) parsed result.
+ */
+export function parseStoredBooksForWrite(json: string | null): Book[] {
+  if (json === null || json === '') return [];
+  let data: unknown;
+  try {
+    data = JSON.parse(json);
+  } catch {
+    throw new Error('Saved library could not be read; refusing to overwrite it.');
+  }
+  if (!Array.isArray(data) || !data.every(isBook)) {
+    throw new Error('Saved library has entries this app version cannot read; refusing to overwrite it.');
+  }
+  return data.map((b) => ({ ...b, notes: typeof b.notes === 'string' ? b.notes : '' }));
+}
+
+/** First visible character for the cover (never half of an emoji surrogate pair). */
+export function coverInitial(title: string): string {
+  const first = Array.from(title.trim())[0] ?? '?';
+  return first.toUpperCase();
+}
+
 export type StatusFilter = BookStatus | 'all';
 
 /** Filter by status and a case-insensitive title/author query. */
@@ -143,7 +169,10 @@ export const MAX_NOTES_LENGTH = 2000;
 
 /** Trims trailing whitespace and caps notes so one book cannot bloat storage. */
 export function normalizeNotes(text: string): string {
-  return text.replace(/\s+$/, '').slice(0, MAX_NOTES_LENGTH);
+  let out = text.replace(/\s+$/, '').slice(0, MAX_NOTES_LENGTH);
+  // Don't leave half of an emoji at the cut.
+  if (/[\uD800-\uDBFF]$/.test(out)) out = out.slice(0, -1);
+  return out;
 }
 
 /** Portable JSON backup of the library (AsyncStorage is device-only). */

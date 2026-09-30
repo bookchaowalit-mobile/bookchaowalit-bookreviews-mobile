@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useBooks } from '../../lib/BookContext';
 import {
   applyPageDelta,
+  coverInitial,
   MAX_NOTES_LENGTH,
   normalizeNotes,
   progressPercent,
@@ -44,7 +45,7 @@ export default function BookDetailScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
       <View style={[styles.cover, { backgroundColor: book.coverColor }]}>
-        <Text style={styles.coverLetter}>{book.title.charAt(0)}</Text>
+        <Text style={styles.coverLetter}>{coverInitial(book.title)}</Text>
         <Text style={styles.coverTitle}>{book.title}</Text>
       </View>
       <Text style={styles.title}>{book.title}</Text>

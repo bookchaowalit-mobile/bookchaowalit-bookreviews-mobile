@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { parseStoredBooks, type Book } from './books';
+import { parseStoredBooks, parseStoredBooksForWrite, type Book } from './books';
 
 export type { Book } from './books';
 
@@ -11,12 +11,17 @@ export async function getBooks(): Promise<Book[]> {
   return parseStoredBooks(await AsyncStorage.getItem(BOOKS_KEY));
 }
 
+/** Load for a read-modify-write; throws rather than risk overwriting unreadable data. */
+async function getBooksForWrite(): Promise<Book[]> {
+  return parseStoredBooksForWrite(await AsyncStorage.getItem(BOOKS_KEY));
+}
+
 export async function saveBooks(books: Book[]): Promise<void> {
   await AsyncStorage.setItem(BOOKS_KEY, JSON.stringify(books));
 }
 
 export async function addBook(book: Omit<Book, 'id' | 'dateAdded' | 'coverColor'>): Promise<Book[]> {
-  const books = await getBooks();
+  const books = await getBooksForWrite();
   const newBook: Book = {
     ...book,
     id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
@@ -30,7 +35,7 @@ export async function addBook(book: Omit<Book, 'id' | 'dateAdded' | 'coverColor'
 }
 
 export async function updateBook(id: string, updates: Partial<Book>): Promise<Book[]> {
-  const books = await getBooks();
+  const books = await getBooksForWrite();
   const idx = books.findIndex(b => b.id === id);
   if (idx >= 0) {
     books[idx] = { ...books[idx], ...updates };
@@ -43,7 +48,7 @@ export async function updateBook(id: string, updates: Partial<Book>): Promise<Bo
 }
 
 export async function deleteBook(id: string): Promise<Book[]> {
-  const books = (await getBooks()).filter(b => b.id !== id);
+  const books = (await getBooksForWrite()).filter(b => b.id !== id);
   await saveBooks(books);
   return books;
 }

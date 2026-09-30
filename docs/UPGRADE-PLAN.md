@@ -49,3 +49,12 @@ Score: 7/10 (was 6/10) — notes are editable and the library can be exported; s
 - Accessibility: labelled notes field, save/export/remove buttons with roles and disabled state.
 - Advisories: lockfile-only patch updates (`npm update`) for brace-expansion, fast-uri, js-yaml, undici and @xmldom/xmldom; `overrides.postcss ^8.5.28`. 29 -> 24 findings (10 -> 5 high). Remaining (tar critical, image-size, uuid, xmldom 0.7 via plist, vitest dev-only) need the SDK 53+ / vitest 4 majors.
 - Verified: typecheck, lint, 15 vitest tests, Android `expo export` bundle.
+
+## Done in this pass (pass 3)
+
+Score: 7.5/10 (was 7/10) — edge-case hunt in `lib/books.ts` / `lib/storage.ts`.
+
+- Bug (data loss): add/update/delete re-read storage with the lenient parser, which returns `[]` for corrupt JSON and silently drops unreadable entries — the next write then overwrote the whole saved library. Writes now use `parseStoredBooksForWrite`, which throws instead; `BookContext` shows an alert and leaves storage untouched.
+- Bug: the cover used `title.charAt(0)`, which renders half a surrogate pair for a title starting with an emoji; `coverInitial` uses the first code point.
+- Bug: `normalizeNotes` could cut an emoji in half at the 2000-unit cap.
+- Verified: typecheck, lint, 18 vitest tests, Android `expo export`.
