@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
+import { computeStats, type LibraryStats } from './books';
 import { Book, getBooks, addBook as addBookStorage, updateBook as updateBookStorage, deleteBook as deleteBookStorage } from './storage';
 
 interface BookContextType {
@@ -7,7 +8,7 @@ interface BookContextType {
   addBook: (book: Omit<Book, 'id' | 'dateAdded' | 'coverColor'>) => Promise<void>;
   updateBook: (id: string, updates: Partial<Book>) => Promise<void>;
   deleteBook: (id: string) => Promise<void>;
-  stats: { total: number; reading: number; completed: number; pages: number };
+  stats: LibraryStats;
 }
 
 const BookContext = createContext<BookContextType | null>(null);
@@ -17,15 +18,13 @@ export function BookProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getBooks().then(b => { setBooks(b); setLoading(false); });
+    getBooks()
+      .then(setBooks)
+      .catch(() => setBooks([]))
+      .finally(() => setLoading(false));
   }, []);
 
-  const stats = {
-    total: books.length,
-    reading: books.filter(b => b.status === 'reading').length,
-    completed: books.filter(b => b.status === 'completed').length,
-    pages: books.reduce((sum, b) => sum + b.currentPage, 0),
-  };
+  const stats = useMemo(() => computeStats(books), [books]);
 
   return (
     <BookContext.Provider value={{
@@ -39,4 +38,8 @@ export function BookProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export const useBooks = () => useContext(BookContext)!;
+export function useBooks(): BookContextType {
+  const ctx = useContext(BookContext);
+  if (!ctx) throw new Error('useBooks must be used inside <BookProvider>');
+  return ctx;
+}

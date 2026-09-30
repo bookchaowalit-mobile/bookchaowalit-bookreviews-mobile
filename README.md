@@ -8,11 +8,11 @@ All data is local (`AsyncStorage`) — no backend.
 
 | Route | What it is |
 |---|---|
-| `/(tabs)` (Library) | Your books, grouped/filterable by status |
+| `/(tabs)` (Library) | Your books, filterable by status (tap a count chip) with title/author search |
 | `/(tabs)/stats` | Aggregate stats — total books, pages read, etc. |
 | `/(tabs)/profile` | Profile tab |
 | `/add` | Add a book (title, author, pages, status, rating) |
-| `/book/[id]` | Book detail — progress bar with ±10/±50 page buttons, star rating, delete |
+| `/book/[id]` | Book detail — status switcher, progress bar with -10/+10/+50 page buttons, tappable star rating, delete |
 
 ## Notes from a recent audit pass
 
@@ -51,8 +51,8 @@ Also found:
 - `app.json` references `./assets/icon.png`, but no `assets/` directory
   exists anywhere in the repo. Didn't block `expo start --web` in this
   pass, but would very likely block a real iOS/Android build (EAS Build
-  requires the configured icon to exist). Not fixed — fabricating app
-  icon artwork isn't something to do blind; flagging it here instead.
+  requires the configured icon to exist). Icon files have since been
+  added under `assets/`.
 
 Cleared what `npm audit fix` could reach; the remaining findings are all
 inside Expo's own build tooling (`@expo/prebuild-config` → `node-tar`,
@@ -61,7 +61,14 @@ inside Expo's own build tooling (`@expo/prebuild-config` → `node-tar`,
 ## Development
 
 ```bash
-npm install
-npm run web     # or: npm run ios / npm run android
-npm run lint
+npm ci
+npm run web       # or: npm run ios / npm run android
+npm run validate  # expo lint + tsc --noEmit + vitest
+npx expo export --platform android --output-dir dist   # bundle smoke check
 ```
+
+Pure logic lives in `lib/books.ts` and is unit-tested with Vitest
+(`lib/books.test.ts`). CI (`.github/workflows/build.yml`) runs all of the above
+and fails on errors; the EAS preview build is owner-triggered
+(`workflow_dispatch`) and needs the `EXPO_TOKEN` secret. See
+`docs/UPGRADE-PLAN.md` for the backlog.
