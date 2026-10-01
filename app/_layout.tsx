@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { BookProvider } from './lib/BookContext';
+import { BookProvider } from '../lib/BookContext';
 
 export default function RootLayout() {
   return (

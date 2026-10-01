@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useBooks } from './lib/BookContext';
+import { useBooks } from '../lib/BookContext';
+import { STATUSES, toNewBook, validateNewBook, type BookStatus } from '../lib/books';
 
 export default function AddBookScreen() {
   const router = useRouter();
@@ -9,15 +10,17 @@ export default function AddBookScreen() {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [pages, setPages] = useState('');
-  const [status, setStatus] = useState<'reading' | 'completed' | 'want-to-read'>('want-to-read');
+  const [status, setStatus] = useState<BookStatus>('want-to-read');
   const [rating, setRating] = useState(0);
 
   const handleSave = async () => {
-    if (!title.trim() || !author.trim()) {
-      Alert.alert('Missing Info', 'Please enter at least a title and author.');
+    const input = { title, author, pages, status, rating };
+    const error = validateNewBook(input);
+    if (error) {
+      Alert.alert('Check the form', error);
       return;
     }
-    await addBook({ title: title.trim(), author: author.trim(), pages: parseInt(pages) || 0, currentPage: status === 'completed' ? (parseInt(pages) || 0) : 0, status, rating, notes: '' });
+    await addBook(toNewBook(input));
     router.back();
   };
 
@@ -31,13 +34,13 @@ export default function AddBookScreen() {
       <TextInput style={styles.input} value={pages} onChangeText={setPages} placeholder="Number of pages" placeholderTextColor="#555" keyboardType="number-pad" />
       <Text style={styles.label}>Status</Text>
       <View style={styles.statusRow}>
-        {(['want-to-read', 'reading', 'completed'] as const).map(s => (
-          <TouchableOpacity key={s} style={[styles.statusBtn, status === s && styles.statusBtnActive]} onPress={() => setStatus(s)}>
+        {STATUSES.map(s => (
+          <TouchableOpacity key={s} style={[styles.statusBtn, status === s && styles.statusBtnActive]} onPress={() => setStatus(s)} accessibilityRole="radio" accessibilityState={{ selected: status === s }}>
             <Text style={[styles.statusBtnText, status === s && styles.statusBtnTextActive]}>{s}</Text>
           </TouchableOpacity>
         ))}
       </View>
-      {status !== 'want-to-read' && <><Text style={styles.label}>Rating</Text><View style={styles.ratingRow}>{[1,2,3,4,5].map(n => <TouchableOpacity key={n} onPress={() => setRating(n)}><Text style={[styles.star, n <= rating && styles.starActive]}>★</Text></TouchableOpacity>)}</View></>}
+      {status !== 'want-to-read' && <><Text style={styles.label}>Rating</Text><View style={styles.ratingRow}>{[1,2,3,4,5].map(n => <TouchableOpacity key={n} onPress={() => setRating(n === rating ? 0 : n)} accessibilityRole="button" accessibilityLabel={`Rate ${n} of 5`} accessibilityState={{ selected: n <= rating }}><Text style={[styles.star, n <= rating && styles.starActive]}>★</Text></TouchableOpacity>)}</View></>}
       <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
         <Text style={styles.saveBtnText}>Add Book</Text>
       </TouchableOpacity>

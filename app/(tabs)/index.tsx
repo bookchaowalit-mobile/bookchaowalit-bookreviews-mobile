@@ -1,7 +1,9 @@
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useBooks } from '../lib/BookContext';
+import { useBooks } from '../../lib/BookContext';
 import { Ionicons } from '@expo/vector-icons';
+import { filterBooks, progressPercent, type StatusFilter } from '../../lib/books';
 
 const STATUS_COLORS: Record<string, string> = {
   'reading': '#2a9d8f', 'completed': '#e9c46a', 'want-to-read': '#e76f51',
@@ -10,6 +12,9 @@ const STATUS_COLORS: Record<string, string> = {
 export default function LibraryScreen() {
   const { books, loading, stats } = useBooks();
   const router = useRouter();
+  const [filter, setFilter] = useState<StatusFilter>('all');
+  const [query, setQuery] = useState('');
+  const visible = filterBooks(books, filter, query);
 
   if (loading) return <View style={styles.center}><Text style={styles.text}>Loading...</Text></View>;
 
@@ -17,17 +22,41 @@ export default function LibraryScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>My Library</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/add')}>
+        <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/add')} accessibilityRole="button" accessibilityLabel="Add book">
           <Ionicons name="add" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
       <View style={styles.statsRow}>
-        <View style={styles.statChip}><Text style={styles.statNum}>{stats.total}</Text><Text style={styles.statLabel}>Total</Text></View>
-        <View style={styles.statChip}><Text style={styles.statNum}>{stats.reading}</Text><Text style={styles.statLabel}>Reading</Text></View>
-        <View style={styles.statChip}><Text style={styles.statNum}>{stats.completed}</Text><Text style={styles.statLabel}>Done</Text></View>
+        {([
+          ['all', stats.total, 'All'],
+          ['reading', stats.reading, 'Reading'],
+          ['completed', stats.completed, 'Done'],
+          ['want-to-read', stats.wantToRead, 'Want'],
+        ] as const).map(([key, count, label]) => (
+          <TouchableOpacity
+            key={key}
+            style={[styles.statChip, filter === key && styles.statChipActive]}
+            onPress={() => setFilter(key)}
+            accessibilityRole="button"
+            accessibilityLabel={`Show ${label}: ${count}`}
+            accessibilityState={{ selected: filter === key }}
+          >
+            <Text style={styles.statNum}>{count}</Text><Text style={styles.statLabel}>{label}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
+      {books.length > 0 && (
+        <TextInput
+          style={styles.search}
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search title or author"
+          placeholderTextColor="#555"
+          accessibilityLabel="Search books"
+        />
+      )}
       <FlatList
-        data={books}
+        data={visible}
         keyExtractor={b => b.id}
         contentContainerStyle={{ paddingBottom: 100 }}
         renderItem={({ item }) => (
@@ -43,7 +72,7 @@ export default function LibraryScreen() {
                   <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] }]}>{item.status}</Text>
                 </View>
                 {item.status === 'reading' && (
-                  <Text style={styles.progress}>{Math.round((item.currentPage / item.pages) * 100)}%</Text>
+                  <Text style={styles.progress}>{progressPercent(item)}%</Text>
                 )}
                 {item.rating > 0 && <Text style={styles.stars}>{'★'.repeat(item.rating)}{'☆'.repeat(5 - item.rating)}</Text>}
               </View>
@@ -53,7 +82,7 @@ export default function LibraryScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="library" size={64} color="#333" />
-            <Text style={styles.emptyText}>No books yet.{'\n'}Tap + to add your first book!</Text>
+            <Text style={styles.emptyText}>{books.length ? 'No books match this filter.' : 'No books yet.\nTap + to add your first book!'}</Text>
           </View>
         }
       />
@@ -68,8 +97,10 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   title: { color: '#fff', fontSize: 28, fontWeight: 'bold' },
   addBtn: { backgroundColor: '#e94560', width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-  statsRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
+  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   statChip: { flex: 1, backgroundColor: '#16213e', borderRadius: 12, padding: 12, alignItems: 'center' },
+  statChipActive: { borderWidth: 1, borderColor: '#e94560' },
+  search: { backgroundColor: '#16213e', borderRadius: 12, padding: 12, color: '#fff', fontSize: 15, marginBottom: 16 },
   statNum: { color: '#e94560', fontSize: 24, fontWeight: 'bold' },
   statLabel: { color: '#888', fontSize: 12, marginTop: 2 },
   bookCard: { flexDirection: 'row', backgroundColor: '#16213e', borderRadius: 16, padding: 16, marginBottom: 12 },
